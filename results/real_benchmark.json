@@ -1,0 +1,32 @@
+[
+  {
+    "test_id": 1,
+    "word_count": 1990,
+    "save_ms": 4163.01,
+    "load_ms": 8.52,
+    "tqk_kb": 49156.36,
+    "raw_kb": 49152.0,
+    "compression": 1.0,
+    "cosine_sim": 1.000017
+  },
+  {
+    "test_id": 2,
+    "word_count": 1570,
+    "save_ms": 3255.25,
+    "load_ms": 6.42,
+    "tqk_kb": 48028.36,
+    "raw_kb": 48024.0,
+    "compression": 1.0,
+    "cosine_sim": 1.000016
+  },
+  {
+    "test_id": 3,
+    "word_count": 1340,
+    "save_ms": 2484.04,
+    "load_ms": 5.45,
+    "tqk_kb": 41572.35,
+    "raw_kb": 41568.0,
+    "compression": 1.0,
+    "cosine_sim": 1.000013
+  }
+]

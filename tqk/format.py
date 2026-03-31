@@ -67,7 +67,7 @@ class TQKFile:
             if isinstance(entry.compressed_keys, tuple):
                 tensors["keys_packed"] = entry.compressed_keys[0]
                 tensors["keys_scales"] = entry.compressed_keys[1]
-        
+
         if hasattr(entry, "compressed_values") and entry.compressed_values is not None:
             if isinstance(entry.compressed_values, tuple):
                 tensors["values_packed"] = entry.compressed_values[0]

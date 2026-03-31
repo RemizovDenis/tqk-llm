@@ -1,7 +1,7 @@
 # tqk
 
 [![PyPI version](https://img.shields.io/pypi/v/tqk.svg)](https://pypi.org/project/tqk/)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/RemizovDenis/tqk-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/RemizovDenis/tqk-llm/actions)
 
@@ -57,7 +57,7 @@ Measured on synthetic data using `verify_quality.py`.
 | :--- | :--- | :--- | :--- | :--- |
 | FP16 (Baseline) | 32.0 MB | 32.0 MB | 1.0x | 1.0000 |
 | TQK (v0.1.0) | 32.0 MB | 32.0 MB | 1.0x | 0.9999 |
-| TQK + MoE | 32.0 MB | ~2.3 MB | **14.0x** | *Coming in v0.2.0* |
+| **TQK + TurboQuant** | 13.6 MB | 1.6 MB | **8.5x** | **0.8919** |
 
 *Note: Measured on standard CPU environment. Real model results available in [experiments/](experiments/).*
 

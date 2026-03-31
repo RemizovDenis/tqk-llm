@@ -63,17 +63,25 @@ class TQKFile:
 
         # Safely extract tensors from CacheEntry or similar objects
         if hasattr(entry, "compressed_keys") and entry.compressed_keys is not None:
-            tensors["keys_packed"] = entry.compressed_keys.packed
-            tensors["keys_scales"] = entry.compressed_keys.scales
+            # v0.3.0 uses tuples (packed, scales)
+            if isinstance(entry.compressed_keys, tuple):
+                tensors["keys_packed"] = entry.compressed_keys[0]
+                tensors["keys_scales"] = entry.compressed_keys[1]
+        
         if hasattr(entry, "compressed_values") and entry.compressed_values is not None:
-            tensors["values_packed"] = entry.compressed_values.packed
-            tensors["values_scales"] = entry.compressed_values.scales
+            if isinstance(entry.compressed_values, tuple):
+                tensors["values_packed"] = entry.compressed_values[0]
+                tensors["values_scales"] = entry.compressed_values[1]
 
-        # Optional residuals
+        # Optional residuals and norms (v0.3.0+)
         if hasattr(entry, "residual_keys") and entry.residual_keys is not None:
             tensors["residual_keys"] = entry.residual_keys
         if hasattr(entry, "residual_values") and entry.residual_values is not None:
             tensors["residual_values"] = entry.residual_values
+        if hasattr(entry, "residual_norms_k") and entry.residual_norms_k is not None:
+            tensors["residual_norms_k"] = entry.residual_norms_k
+        if hasattr(entry, "residual_norms_v") and entry.residual_norms_v is not None:
+            tensors["residual_norms_v"] = entry.residual_norms_v
 
         return cls(tensors, metadata)
 

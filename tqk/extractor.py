@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import importlib.util
 import warnings
 from typing import Any
 
 import torch
 import torch.nn as nn
-
-import importlib.util
 
 HAS_TRANSFORMERS = importlib.util.find_spec("transformers") is not None
 
@@ -43,7 +42,10 @@ class KVExtractor:
             Dictionary mapped as {"layer_N_keys": Tensor, "layer_N_values": Tensor}.
         """
         if not HAS_TRANSFORMERS:
-            warnings.warn("Transformers package is missing. Extraction may not behave as expected.")
+            warnings.warn(
+                "Transformers package is missing. Extraction may not behave as expected.",
+                stacklevel=2,
+            )
 
         inputs = self.tokenizer(
             text, return_tensors="pt", truncation=True, max_length=max_length
@@ -54,7 +56,9 @@ class KVExtractor:
             outputs = self.model(**inputs, use_cache=True, output_attentions=False)
 
         if not hasattr(outputs, "past_key_values") or outputs.past_key_values is None:
-            warnings.warn(f"Model of type {type(self.model)} did not return past_key_values.")
+            warnings.warn(
+                f"Model of type {type(self.model)} did not return past_key_values.", stacklevel=2
+            )
             return {}
 
         kv_cache: dict[str, torch.Tensor] = {}

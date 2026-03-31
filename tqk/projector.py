@@ -8,11 +8,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+import safetensors.torch
+import structlog
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import structlog
-import safetensors.torch
 
 logger = structlog.get_logger()
 
@@ -133,7 +133,7 @@ class CrossModelKVProjector:
             print(f"Projector weights for {pair} not found locally.")
             print(f"Train them with: tqk train --pair {pair}")
             print("Or download from: huggingface.co/RemizovDenis/tqk-projectors")
-            warnings.warn(f"Returning untrained projector for {pair}.", UserWarning)
+            warnings.warn(f"Returning untrained projector for {pair}.", UserWarning, stacklevel=2)
             # Default dims for common pairs if missing
             if "llama3.2-3b" in source_model and "mistral-7b" in target_model:
                 config.source_dim, config.target_dim = 3072, 4096
@@ -269,7 +269,7 @@ class CrossModelKVProjector:
         """Load projector from saved directory/file."""
         path = Path(path)
         config_path = path.with_suffix(".json")
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config_dict = json.load(f)
             config = ProjectorConfig(**config_dict)
 

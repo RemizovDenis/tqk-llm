@@ -2,17 +2,24 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
 import torch.nn as nn
+
 from tqk.cli import main
 from tqk.extractor import KVExtractor
 from tqk.format import TQKFile, TQKMetadata
 from tqk.projector import CrossModelKVProjector, LinearProjector, ProjectorConfig
+from tqk.turboquant_bridge import (
+    HAS_TURBOQUANT,
+    TQKPipeline,
+    compress_to_tqk,
+    decompress_from_tqk,
+    patch_model_with_tqk,
+)
 from tqk.validator import TQKValidator
 
 
@@ -212,11 +219,11 @@ class TestProjector:
             source_heads=1, target_heads=1
         )
         projector = CrossModelKVProjector(config)
-        
+
         # Create dummy related data
         source_kv = [{"layer_0_keys": torch.randn(10, 16)}]
         target_kv = [{"layer_0_keys": source_kv[0]["layer_0_keys"] * 2.5 + 0.1}]
-        
+
         history = projector.train_on_pairs(source_kv, target_kv, epochs=5, lr=0.1)
         assert history["train_loss"][-1] < history["train_loss"][0]
 
@@ -247,11 +254,11 @@ class TestProjector:
         projector = CrossModelKVProjector(config)
         path = tmp_path / "proj.safetensors"
         projector.save(path)
-        
+
         loaded = CrossModelKVProjector.load(path)
         assert loaded.config.source_dim == 32
         assert loaded.config.target_dim == 64
-        
+
         orig_weight = projector.model.net[0].weight # type: ignore[cast]
         loaded_weight = loaded.model.net[0].weight # type: ignore[cast]
         assert torch.allclose(orig_weight, loaded_weight)
@@ -273,7 +280,7 @@ class TestProjector:
                     nn.init.eye_(m.weight)
                     if m.bias is not None:
                         nn.init.zeros_(m.bias)
-        
+
         kv = [{"layer_0_keys": torch.randn(1, 16)}]
         res = projector.quality(kv, kv)
         assert res["mean_cosine_similarity"] > 0.99
@@ -293,3 +300,59 @@ class TestProjector:
         res = projector.quality(src, tgt)
         # Random vectors in 16D have low expected cosine sim
         assert res["percent_above_threshold"] < 0.5
+
+
+class TestTurboquantBridge:
+    """Test suite for TQK bridge and pipeline."""
+
+    def test_compress_without_turboquant(self) -> None:
+        """Verify fallback compression logic (no turboquant needed)."""
+        torch.manual_seed(42)
+        k = torch.randn(1, 16, 16)
+        v = torch.randn(1, 16, 16)
+        tqk = compress_to_tqk(k, v, source_model="m")
+        assert isinstance(tqk, TQKFile)
+        assert tqk.metadata.source_model == "m"
+
+    def test_decompress_roundtrip(self) -> None:
+        """Verify decompression accuracy (cosine_sim > 0.95)."""
+        torch.manual_seed(42)
+        k = torch.randn(1, 16, 16).half()
+        v = torch.randn(1, 16, 16).half()
+        tqk = compress_to_tqk(k, v, source_model="m")
+        dk, dv = decompress_from_tqk(tqk)
+
+        cos_k = torch.nn.functional.cosine_similarity(k.flatten(), dk.flatten(), dim=0)
+        assert cos_k > 0.95
+
+    def test_pipeline_save_context(self, tmp_path: Path) -> None:
+        """Verify TQKPipeline can save context using a mock model."""
+        class MockModel:
+            config = type("obj", (object,), {"hidden_size": 16})
+            def to(self, *args, **kwargs): return self
+            def eval(self): return self
+            def __call__(self, *args, **kwargs):
+                return type("obj", (object,), {"past_key_values": ((torch.randn(1, 1, 1, 16), torch.randn(1, 1, 1, 16)),)})()
+
+        class MockTokenizer:
+            def __call__(self, *args, **kwargs):
+                return {"input_ids": torch.tensor([[1]]), "attention_mask": torch.tensor([[1]])}
+
+        pipeline = TQKPipeline(MockModel(), source_tokenizer=MockTokenizer())
+        path = tmp_path / "context.tqk"
+        tqk = pipeline.save_context("test", path)
+        assert path.exists()
+        assert tqk.metadata.source_model == "pipeline"
+
+    def test_patch_model_unsupported_warns(self) -> None:
+        """Verify warning when patching a non-HF model."""
+        class NotAModel:
+            pass
+        with pytest.warns(UserWarning, match="not appear to be a standard HuggingFace"):
+            tqk = TQKFile({}, TQKMetadata(source_model="m"))
+            res = patch_model_with_tqk(NotAModel(), tqk)
+            assert isinstance(res, NotAModel)
+
+    def test_has_turboquant_flag(self) -> None:
+        """Verify HAS_TURBOQUANT global flag exists and is boolean."""
+        assert isinstance(HAS_TURBOQUANT, bool)

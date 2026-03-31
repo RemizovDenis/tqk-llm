@@ -4,22 +4,42 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tqk"
-version = "0.0.1"
+version = "0.1.0"
 description = "Portable memory format for large language models"
 readme = "README.md"
-license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+keywords = ["llm", "kv-cache", "memory", "transformer", "compression"]
+authors = [
+    { name = "Denis Remizov" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "torch>=2.2.0",
     "numpy>=1.26",
     "safetensors>=0.4",
+    "structlog>=23.0",
 ]
 
 [project.optional-dependencies]
 turboquant = ["turboquant-moe>=0.3.0"]
-transformers = ["transformers>=4.40.0"]
-all = ["turboquant-moe>=0.3.0", "transformers>=4.40.0"]
-dev = ["pytest>=7.4", "ruff>=0.3", "mypy>=1.8"]
+transformers = ["transformers>=4.40.0", "accelerate>=0.25.0"]
+train = ["torch>=2.2.0"]
+all = ["turboquant-moe>=0.3.0", "transformers>=4.40.0", "accelerate>=0.25.0"]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.3",
+    "mypy>=1.8",
+    "types-tqdm",
+]
 
 [project.scripts]
 tqk = "tqk.cli:main"
@@ -27,3 +47,23 @@ tqk = "tqk.cli:main"
 [project.urls]
 Homepage = "https://github.com/RemizovDenis/tqk-llm"
 Repository = "https://github.com/RemizovDenis/tqk-llm"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tqk"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501", "B905"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

@@ -26,6 +26,7 @@ dependencies = [
     "numpy>=1.26",
     "safetensors>=0.4",
     "structlog>=23.0",
+    "packaging",
 ]
 
 [project.optional-dependencies]

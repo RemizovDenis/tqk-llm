@@ -8,9 +8,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
+import torch.nn as nn
 from tqk.cli import main
 from tqk.extractor import KVExtractor
 from tqk.format import TQKFile, TQKMetadata
+from tqk.projector import CrossModelKVProjector, LinearProjector, ProjectorConfig
 from tqk.validator import TQKValidator
 
 
@@ -138,3 +140,156 @@ def test_extractor_mock() -> None:
     res = extractor.extract("hello")
     assert "layer_0_keys" in res
     assert "layer_0_values" in res
+
+
+class TestProjector:
+    """Test suite for LinearProjector and CrossModelKVProjector."""
+
+    def test_linear_projector_forward_shape(self) -> None:
+        """Verify that LinearProjector produces the correct output shape."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=64, target_dim=128,
+            source_heads=1, target_heads=1
+        )
+        model = LinearProjector(config)
+        x = torch.randn(4, 32, 64)
+        out = model(x)
+        assert out.shape == (4, 32, 128)
+
+    def test_linear_projector_xavier_init(self) -> None:
+        """Verify that weights are initialized via Xavier (not zero)."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=100, target_dim=100,
+            source_heads=1, target_heads=1
+        )
+        model = LinearProjector(config)
+        for name, param in model.named_parameters():
+            if "weight" in name:
+                assert not torch.all(param == 0)
+
+    def test_transfer_preserves_keys(self) -> None:
+        """Verify that CrossModelKVProjector.transfer preserves dictionary keys."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=64, target_dim=128,
+            source_heads=1, target_heads=1
+        )
+        projector = CrossModelKVProjector(config)
+        kv = {"layer_0_keys": torch.randn(1, 64), "layer_0_values": torch.randn(1, 64)}
+        res = projector.transfer(kv)
+        assert set(res.keys()) == {"layer_0_keys", "layer_0_values"}
+
+    def test_transfer_changes_dim(self) -> None:
+        """Verify that transfer changes source_dim to target_dim."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=64, target_dim=128,
+            source_heads=1, target_heads=1
+        )
+        projector = CrossModelKVProjector(config)
+        kv = {"layer_0_keys": torch.randn(1, 4, 64)}
+        res = projector.transfer(kv)
+        assert res["layer_0_keys"].shape[-1] == 128
+
+    def test_from_pretrained_missing_weights_warns(self) -> None:
+        """Verify that from_pretrained warns and doesn't crash when weights missing."""
+        with pytest.warns(UserWarning, match="untrained projector"):
+            projector = CrossModelKVProjector.from_pretrained("llama3.2-3b->mistral-7b")
+        assert isinstance(projector, CrossModelKVProjector)
+
+    def test_train_on_pairs_reduces_loss(self) -> None:
+        """Verify that weights are updated and loss decreases during training."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=16, target_dim=16,
+            source_heads=1, target_heads=1
+        )
+        projector = CrossModelKVProjector(config)
+        
+        # Create dummy related data
+        source_kv = [{"layer_0_keys": torch.randn(10, 16)}]
+        target_kv = [{"layer_0_keys": source_kv[0]["layer_0_keys"] * 2.5 + 0.1}]
+        
+        history = projector.train_on_pairs(source_kv, target_kv, epochs=5, lr=0.1)
+        assert history["train_loss"][-1] < history["train_loss"][0]
+
+    def test_train_returns_history(self) -> None:
+        """Verify training history dictionary structure."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=16, target_dim=16,
+            source_heads=1, target_heads=1
+        )
+        projector = CrossModelKVProjector(config)
+        source_kv = [{"layer_0_keys": torch.randn(2, 16)}]
+        target_kv = [{"layer_0_keys": torch.randn(2, 16)}]
+        history = projector.train_on_pairs(source_kv, target_kv, epochs=2)
+        assert "train_loss" in history
+        assert "cosine_sim" in history
+        assert len(history["train_loss"]) == 2
+
+    def test_save_load_roundtrip(self, tmp_path: Path) -> None:
+        """Verify that save and load restore identical projector weights."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=32, target_dim=64,
+            source_heads=1, target_heads=1
+        )
+        projector = CrossModelKVProjector(config)
+        path = tmp_path / "proj.safetensors"
+        projector.save(path)
+        
+        loaded = CrossModelKVProjector.load(path)
+        assert loaded.config.source_dim == 32
+        assert loaded.config.target_dim == 64
+        
+        orig_weight = projector.model.net[0].weight # type: ignore[cast]
+        loaded_weight = loaded.model.net[0].weight # type: ignore[cast]
+        assert torch.allclose(orig_weight, loaded_weight)
+
+    def test_quality_identical_perfect(self) -> None:
+        """If source matches target, quality should be near perfect."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="s",
+            source_dim=16, target_dim=16,
+            source_heads=1, target_heads=1,
+            num_layers=1
+        )
+        # Manually set to identity for perfect score
+        projector = CrossModelKVProjector(config)
+        with torch.no_grad():
+            for m in projector.model.modules():
+                if isinstance(m, nn.Linear):
+                    nn.init.eye_(m.weight)
+                    if m.bias is not None:
+                        nn.init.zeros_(m.bias)
+        
+        kv = [{"layer_0_keys": torch.randn(1, 16)}]
+        res = projector.quality(kv, kv)
+        assert res["mean_cosine_similarity"] > 0.99
+        assert res["percent_above_threshold"] == 1.0
+
+    def test_quality_random_low(self) -> None:
+        """Random unrelated tensors should result in low passing rate."""
+        torch.manual_seed(42)
+        config = ProjectorConfig(
+            source_model="s", target_model="t",
+            source_dim=16, target_dim=16,
+            source_heads=1, target_heads=1
+        )
+        projector = CrossModelKVProjector(config)
+        src = [{"layer_0_keys": torch.randn(1, 16)}]
+        tgt = [{"layer_0_keys": torch.randn(1, 16)}]
+        res = projector.quality(src, tgt)
+        # Random vectors in 16D have low expected cosine sim
+        assert res["percent_above_threshold"] < 0.5

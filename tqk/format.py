@@ -47,15 +47,18 @@ class TQKFile:
     @classmethod
     def from_cache_entry(cls, entry: Any, metadata: TQKMetadata) -> TQKFile:
         """
-        Create TQKFile from a TurboQuant CacheEntry.
+        Create TQKFile from a TurboQuant CacheEntry or a raw tensor dictionary.
 
         Args:
-            entry: Object with compressed_keys and compressed_values.
+            entry: Object with compressed_keys/values OR a dict of tensors.
             metadata: Metadata for the file.
 
         Returns:
             TQKFile instance.
         """
+        if isinstance(entry, dict):
+            return cls(entry, metadata)
+
         tensors: dict[str, torch.Tensor] = {}
 
         # Safely extract tensors from CacheEntry or similar objects

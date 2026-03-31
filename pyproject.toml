@@ -7,7 +7,7 @@ name = "tqk"
 version = "0.1.0"
 description = "Portable memory format for large language models"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 license = { text = "Apache-2.0" }
 keywords = ["llm", "kv-cache", "memory", "transformer", "compression"]
 authors = [

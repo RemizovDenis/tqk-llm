@@ -95,7 +95,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and testing instructions.
 
 ## License
 
-Apache 2.0
+License: Business Source License 1.1
+Non-commercial use is free.
+Commercial use requires a license agreement.
+Converts to Apache 2.0 on 2030-04-01.
+Contact: github.com/RemizovDenis
 
 ## Citation
 

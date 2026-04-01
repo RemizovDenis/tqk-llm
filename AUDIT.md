@@ -29,5 +29,4 @@ Cross-model projectors have been verified to successfully transform 16D vector s
 
 ---
 
-**Certified by Antigravity AI Engine**  
-*Release v0.1.0 - 2026-04-01*
+*Technical Baseline – v0.1.0 - 2026-04-01*

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Portable memory format for large language models"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "Apache-2.0" }
+license = { text = "BUSL-1.1" }
 keywords = ["llm", "kv-cache", "memory", "transformer", "compression"]
 authors = [
     { name = "Denis Remizov" }
@@ -16,7 +16,7 @@ authors = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Denis Remizov. Licensed under BUSL-1.1.
+# See LICENSE file for details.
+
+
 """tqk/cli.py — CLI interface for TQK memory format management."""
 
 from __future__ import annotations

@@ -1,28 +1,26 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-We actively provide security updates for the current major version (v0.1.x).
+Security fixes are provided for the current `main` line and latest release tag.
 
-## Reporting a Vulnerability
+## Reporting vulnerabilities
 
-If you discover a security vulnerability in tqk, please do not use the public issue tracker. Instead, use one of the following methods:
+Please do not report vulnerabilities in public issues.
 
-1. **Email**: [securilayer@icloud.com](mailto:securilayer@icloud.com)
-2. **GitHub Private Disclosure**: Use the "Report a vulnerability" button in the Security tab of the repository.
+Use one of the following:
 
-### What to report
+- Email: securilayer@icloud.com
+- GitHub private advisory in Security tab
 
-- Arbitrary code execution via malformed `.tqk` files.
-- Buffer overflows or memory safety issues in the binary format parser.
-- Information leaks during cross-model projection.
+## What to include
 
-### Our Commitment
+- impacted component and version/commit
+- exploitability and impact
+- reproduction steps
+- suggested mitigation if available
 
-- We will acknowledge receipt of your report within **48 hours**.
-- We will provide an estimated timeline for a fix within 5 business days.
-- We will credit you for the discovery in our release notes (if desired).
+## Response targets
 
----
-
-*Thank you for keeping TQK secure!*
+- acknowledgement within 48 hours
+- triage and next action within 5 business days

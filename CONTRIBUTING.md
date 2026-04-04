@@ -1,45 +1,29 @@
 # Contributing to tqk
 
-We love your help! tqk is a technical project, and we value precision and quality.
+## Local development
 
-## Local Development
+```bash
+git clone https://github.com/RemizovDenis/tqk-llm.git
+cd tqk-llm
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev,transformers]"
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/RemizovDenis/tqk-llm.git
-   cd tqk
-   ```
+## Required checks before PR
 
-2. **Setup virtual environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -e ".[dev,transformers]"
-   ```
+```bash
+ruff check tqk tests
+ruff format --check tqk tests
+mypy tqk --strict --ignore-missing-imports --show-error-context --show-error-codes --python-version 3.11
+pytest tests/ -v --tb=short
+python3 verify_quality.py
+```
 
-3. **Verify installation**:
-   ```bash
-   python3 verify_quality.py
-   ```
+## Pull request rules
 
-## Development Workflow
-
-- **Linting**: We use `ruff`. Run `ruff check .` and `ruff format .` before committing.
-- **Testing**: Run `pytest tests/` to ensure no regressions.
-- **Type Checking**: We enforce strict typing with `mypy`. Run `mypy tqk --strict`.
-
-## Pull Request Process
-
-1. Create a new branch for your feature or fix.
-2. Ensure all tests pass and linting is clean.
-3. We use **Conventional Commits** (e.g., `feat:`, `fix:`, `docs:`, `chore:`).
-4. Submit your PR against the `main` branch. 
-5. All PRs require CI passing and a maintainer review.
-
-## Code of Conduct
-
-Be respectful and focus on technical excellence.
-
----
-
-*Thank you for making LLM memory portable!*
+1. Branch from `main`.
+2. Keep changes focused.
+3. Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
+4. Ensure CI is green.

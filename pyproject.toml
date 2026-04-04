@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tqk"
-version = "0.1.0"
+name = "tqk-llm"
+version = "0.1.1"
 description = "Portable memory format for large language models"
 readme = "README.md"
 requires-python = ">=3.9"

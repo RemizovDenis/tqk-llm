@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/tqk.svg)](https://pypi.org/project/tqk/)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License BUSL-1.1](https://img.shields.io/badge/license-BUSL--1.1-orange.svg)](./LICENSE)
 [![CI](https://github.com/RemizovDenis/tqk-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/RemizovDenis/tqk-llm/actions)
 
 Portable memory format for large language models.
@@ -69,6 +69,8 @@ The `.tqk` format is a simple binary structure:
 3. **Metadata Length**: uint32 little-endian
 4. **Metadata**: UTF-8 JSON (Format description, model identifiers)
 5. **Payload**: `safetensors` stream containing compressed KV tensors.
+
+`tqk validate` now includes an integrity check using payload SHA-256 embedded in metadata.
 
 ## Supported model pairs
 

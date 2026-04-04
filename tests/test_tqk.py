@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import struct
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -51,6 +53,24 @@ def test_tqk_magic_bytes(tmp_path: Path) -> None:
     assert magic == b"TQK1"
 
 
+def _rewrite_payload_hash(path: Path, new_hash: str) -> None:
+    """Test helper: overwrite only metadata hash while keeping payload intact."""
+    raw = path.read_bytes()
+    assert raw[:4] == b"TQK1"
+    metadata_len = struct.unpack("<I", raw[8:12])[0]
+    meta_start = 12
+    meta_end = meta_start + metadata_len
+
+    meta = json.loads(raw[meta_start:meta_end].decode("utf-8"))
+    extra = dict(meta.get("extra") or {})
+    extra["payload_sha256"] = new_hash
+    meta["extra"] = extra
+    new_meta = json.dumps(meta).encode("utf-8")
+    if len(new_meta) != metadata_len:
+        raise AssertionError("metadata length changed in test helper")
+    path.write_bytes(raw[:meta_start] + new_meta + raw[meta_end:])
+
+
 def test_tqk_invalid_magic_raises(tmp_path: Path) -> None:
     """Verify loading a file with invalid magic bytes raises ValueError."""
     path = tmp_path / "invalid.tqk"
@@ -59,6 +79,28 @@ def test_tqk_invalid_magic_raises(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Invalid magic bytes"):
         TQKFile.load(path)
+
+
+def test_tqk_integrity_hash_detects_tampering(tmp_path: Path) -> None:
+    """Load must fail if stored payload hash no longer matches payload bytes."""
+    path = tmp_path / "tampered_hash.tqk"
+    tensors = {"layer_0_keys": torch.randn(2, 4, 8)}
+    TQKFile(tensors, TQKMetadata(source_model="m")).save(path)
+
+    _rewrite_payload_hash(path, "0" * 64)
+    with pytest.raises(ValueError, match="Integrity check failed"):
+        TQKFile.load(path)
+
+
+def test_tqk_integrity_can_be_disabled(tmp_path: Path) -> None:
+    """Debug mode should allow loading when only hash metadata is tampered."""
+    path = tmp_path / "tampered_hash_debug.tqk"
+    tensors = {"layer_0_keys": torch.randn(2, 4, 8)}
+    TQKFile(tensors, TQKMetadata(source_model="m")).save(path)
+
+    _rewrite_payload_hash(path, "f" * 64)
+    loaded = TQKFile.load(path, verify_integrity=False)
+    assert "layer_0_keys" in loaded.tensors
 
 
 def test_validator_passes_identical() -> None:
@@ -104,6 +146,21 @@ def test_cli_validate_ok(tmp_path: Path) -> None:
     TQKFile({}, TQKMetadata(source_model="m")).save(path)
 
     with patch("sys.argv", ["tqk", "validate", str(path)]):
+        with patch("sys.stdout") as mock_stdout:
+            with pytest.raises(SystemExit) as exc:
+                main()
+            assert exc.value.code == 0
+            mock_stdout.write.assert_any_call("OK")
+            mock_stdout.write.assert_any_call("\n")
+
+
+def test_cli_validate_no_integrity_allows_hash_mismatch(tmp_path: Path) -> None:
+    """CLI should support legacy/debug flow where integrity verification is disabled."""
+    path = tmp_path / "valid_no_integrity.tqk"
+    TQKFile({"layer_0_keys": torch.randn(2, 4, 8)}, TQKMetadata(source_model="m")).save(path)
+    _rewrite_payload_hash(path, "a" * 64)
+
+    with patch("sys.argv", ["tqk", "validate", str(path), "--no-integrity"]):
         with patch("sys.stdout") as mock_stdout:
             with pytest.raises(SystemExit) as exc:
                 main()

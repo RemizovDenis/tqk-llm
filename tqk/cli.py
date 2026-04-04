@@ -30,7 +30,7 @@ def validate_command(args: argparse.Namespace) -> int:
     """Validate structure and magic bytes of a .tqk file."""
     try:
         # TQKFile.load already checks magic and version
-        _ = TQKFile.load(args.file)
+        _ = TQKFile.load(args.file, verify_integrity=not args.no_integrity)
         print("OK")
         return 0
     except Exception as e:
@@ -65,6 +65,11 @@ def main() -> None:
     # validate
     val_parser = subparsers.add_parser("validate", help="Check file validity")
     val_parser.add_argument("file", help="Path to the .tqk file")
+    val_parser.add_argument(
+        "--no-integrity",
+        action="store_true",
+        help="Skip SHA-256 integrity verification for legacy/corrupted payload debugging",
+    )
 
     # convert
     conv_parser = subparsers.add_parser("convert", help="Convert between models")

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import struct
 import time
@@ -99,11 +100,21 @@ class TQKFile:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        metadata_json = json.dumps(self.metadata.__dict__).encode("utf-8")
-        metadata_len = len(metadata_json)
-
         # Generate safetensors blob
         payload = safetensors.torch.save(self.tensors)
+        payload_sha256 = hashlib.sha256(payload).hexdigest()
+
+        metadata_dict = dict(self.metadata.__dict__)
+        extra = dict(metadata_dict.get("extra") or {})
+        extra.setdefault("payload_sha256", payload_sha256)
+        extra.setdefault("tensor_bytes", int(sum(int(t.nbytes) for t in self.tensors.values())))
+        metadata_dict["extra"] = extra
+
+        # Keep in-memory metadata consistent with what was written.
+        self.metadata.extra = extra
+
+        metadata_json = json.dumps(metadata_dict).encode("utf-8")
+        metadata_len = len(metadata_json)
 
         with open(path, "wb") as f:
             # Header: magic (4), version (4), metadata_len (4)
@@ -114,7 +125,7 @@ class TQKFile:
             f.write(payload)
 
     @classmethod
-    def load(cls, path: str | Path) -> TQKFile:
+    def load(cls, path: str | Path, verify_integrity: bool = True) -> TQKFile:
         """
         Load a TQKFile from disk.
 
@@ -159,6 +170,15 @@ class TQKFile:
             # Rest is safetensors payload
             payload = f.read()
 
+        if verify_integrity:
+            expected_sha256 = str(metadata.extra.get("payload_sha256", "")).strip()
+            if expected_sha256:
+                actual_sha256 = hashlib.sha256(payload).hexdigest()
+                if actual_sha256 != expected_sha256:
+                    raise ValueError(
+                        "Integrity check failed: payload SHA-256 mismatch"
+                    )
+
         tensors = safetensors.torch.load(payload)
         return cls(tensors, metadata)
 
@@ -200,6 +220,7 @@ class TQKFile:
             "num_layers": self.metadata.num_layers,
             "head_dim": self.metadata.head_dim,
             "num_heads": self.metadata.num_heads,
+            "integrity_sha256": bool(self.metadata.extra.get("payload_sha256")),
         }
 
     def __repr__(self) -> str:

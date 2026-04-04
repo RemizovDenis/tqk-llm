@@ -22,7 +22,7 @@ jobs:
       - name: Ruff check
         run: ruff check tqk tests
       - name: Mypy strict
-        run: mypy tqk --strict --ignore-missing-imports --show-error-context --show-error-codes
+        run: mypy tqk --strict --ignore-missing-imports --show-error-context --show-error-codes --python-version 3.11
 
   test:
     runs-on: ubuntu-latest

@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Added
+- New `tqk benchmark` CLI command for local roundtrip/latency/size audits.
+- JSON + Markdown benchmark artifacts (`tqk_benchmark.json`, `tqk_benchmark.md`).
+
+### Tests
+- Added benchmark module and CLI tests.
+
 ## [0.1.1] - 2026-04-04
 
 ### Changed

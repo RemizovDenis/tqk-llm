@@ -48,6 +48,7 @@ target_model = pipeline.load_context("memory.tqk", target_model, target_tokenize
 ```bash
 tqk info memory.tqk
 tqk validate memory.tqk
+tqk benchmark --layers 8 --heads 4 --seq-len 512 --head-dim 64
 ```
 
 ## Benchmarks
@@ -57,6 +58,11 @@ Reference benchmark and validation assets:
 - [verify_quality.py](./verify_quality.py)
 - [experiments/real_benchmark.py](./experiments/real_benchmark.py)
 - [projectors/README.md](./projectors/README.md)
+
+`tqk benchmark` writes local artifacts:
+
+- `tqk_benchmark.json`
+- `tqk_benchmark.md`
 
 ## Project standards
 

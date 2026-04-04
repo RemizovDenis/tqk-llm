@@ -4,7 +4,7 @@
 
 """tqk — portable memory format for large language models."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __all__ = ["TQKFile"]
 
 from tqk.format import TQKFile

@@ -46,7 +46,7 @@ def compress_to_tqk(
         # result = TurboQuantKVCache.compress(keys, values, config=tq_config)
         # For now, we wrap the tensors. Stage 5 focus is core architecture.
         tensors = {"keys": keys, "values": values}
-        metadata.compression_ratio = 14.0 # Target ratio
+        metadata.compression_ratio = 14.0  # Target ratio
     else:
         # Fallback to float8 if supported by hardware/torch, otherwise fp16
         # Using e4m3fn as it's common for weights/quantization
@@ -54,7 +54,7 @@ def compress_to_tqk(
             if hasattr(torch, "float8_e4m3fn"):
                 tensors = {
                     "keys": keys.to(torch.float8_e4m3fn),
-                    "values": values.to(torch.float8_e4m3fn)
+                    "values": values.to(torch.float8_e4m3fn),
                 }
                 metadata.compression_ratio = 2.0
             else:
@@ -123,12 +123,7 @@ def patch_model_with_tqk(
 class TQKPipeline:
     """End-to-end pipeline for LLM context transfer."""
 
-    def __init__(
-        self,
-        source_model: Any,
-        source_tokenizer: Any,
-        device: str = "cpu"
-    ) -> None:
+    def __init__(self, source_model: Any, source_tokenizer: Any, device: str = "cpu") -> None:
         """
         Initialize TQKPipeline.
 
@@ -142,12 +137,7 @@ class TQKPipeline:
         self.device = device
         self.extractor = KVExtractor(source_model, source_tokenizer, device=device)
 
-    def save_context(
-        self,
-        text: str,
-        output_path: str | Path,
-        max_length: int = 2048
-    ) -> TQKFile:
+    def save_context(self, text: str, output_path: str | Path, max_length: int = 2048) -> TQKFile:
         """
         Extract, compress, and save context to a .tqk file.
 
@@ -159,7 +149,7 @@ class TQKPipeline:
         Returns:
             The created TQKFile.
         """
-        kv = self.extractor.extract(text) # Returns dict of tensors
+        kv = self.extractor.extract(text)  # Returns dict of tensors
         # Convert dict to keys/values tensors
         # Assuming format: layer_0_keys, layer_0_values...
         # In a real integration, we'd stack them properly.
@@ -173,7 +163,7 @@ class TQKPipeline:
         tqk_path: str | Path,
         target_model: Any,
         target_tokenizer: Any,
-        projector: CrossModelKVProjector | None = None
+        projector: CrossModelKVProjector | None = None,
     ) -> Any:
         """
         Load context, project it (if needed), and inject into target model.
@@ -193,7 +183,9 @@ class TQKPipeline:
         if projector:
             kv = projector.transfer(kv)
 
-        patched = patch_model_with_tqk(target_model, TQKFile.from_cache_entry(kv, tqk_file.metadata))
+        patched = patch_model_with_tqk(
+            target_model, TQKFile.from_cache_entry(kv, tqk_file.metadata)
+        )
         return patched
 
     def transfer(
@@ -202,7 +194,7 @@ class TQKPipeline:
         target_model: Any,
         target_tokenizer: Any,
         projector: CrossModelKVProjector | None = None,
-        save_path: str | Path | None = None
+        save_path: str | Path | None = None,
     ) -> Any:
         """
         Full zero-copy context transfer pipeline.

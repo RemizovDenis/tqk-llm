@@ -115,7 +115,7 @@ class CrossModelKVProjector:
             Projector instance.
         """
         if pair not in REGISTRY:
-             raise ValueError(f"Unknown pair: {pair}. Registry: {list(REGISTRY.keys())}")
+            raise ValueError(f"Unknown pair: {pair}. Registry: {list(REGISTRY.keys())}")
 
         weight_path = Path(REGISTRY[pair])
 
@@ -240,7 +240,8 @@ class CrossModelKVProjector:
                 cos_sim = F.cosine_similarity(pred_y, batch_y).mean()
                 loss = mse_loss + 0.1 * (1.0 - cos_sim)
 
-                loss.backward()
+                # Torch stubs vary between versions; cast keeps strict mypy stable in CI.
+                cast(Any, loss).backward()
                 optimizer.step()
 
                 epoch_loss += loss.item() * len(idx)
@@ -251,7 +252,9 @@ class CrossModelKVProjector:
             history["train_loss"].append(avg_loss)
             history["cosine_sim"].append(avg_cos)
 
-            logger.info("epoch_end", epoch=epoch, loss=round(avg_loss, 6), cos_sim=round(avg_cos, 4))
+            logger.info(
+                "epoch_end", epoch=epoch, loss=round(avg_loss, 6), cos_sim=round(avg_cos, 4)
+            )
             if callback:
                 callback(epoch, avg_loss, avg_cos)
 

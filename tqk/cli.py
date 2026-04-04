@@ -53,9 +53,7 @@ def convert_command(args: argparse.Namespace) -> int:
 
 def main() -> None:
     """CLI entry point for the tqk package."""
-    parser = argparse.ArgumentParser(
-        prog="tqk", description="TQK Memory Format CLI"
-    )
+    parser = argparse.ArgumentParser(prog="tqk", description="TQK Memory Format CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # info

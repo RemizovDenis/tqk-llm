@@ -213,9 +213,12 @@ class TestProjector:
         """Verify that LinearProjector produces the correct output shape."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=64, target_dim=128,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=64,
+            target_dim=128,
+            source_heads=1,
+            target_heads=1,
         )
         model = LinearProjector(config)
         x = torch.randn(4, 32, 64)
@@ -226,9 +229,12 @@ class TestProjector:
         """Verify that weights are initialized via Xavier (not zero)."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=100, target_dim=100,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=100,
+            target_dim=100,
+            source_heads=1,
+            target_heads=1,
         )
         model = LinearProjector(config)
         for name, param in model.named_parameters():
@@ -239,9 +245,12 @@ class TestProjector:
         """Verify that CrossModelKVProjector.transfer preserves dictionary keys."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=64, target_dim=128,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=64,
+            target_dim=128,
+            source_heads=1,
+            target_heads=1,
         )
         projector = CrossModelKVProjector(config)
         kv = {"layer_0_keys": torch.randn(1, 64), "layer_0_values": torch.randn(1, 64)}
@@ -252,9 +261,12 @@ class TestProjector:
         """Verify that transfer changes source_dim to target_dim."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=64, target_dim=128,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=64,
+            target_dim=128,
+            source_heads=1,
+            target_heads=1,
         )
         projector = CrossModelKVProjector(config)
         kv = {"layer_0_keys": torch.randn(1, 4, 64)}
@@ -271,9 +283,12 @@ class TestProjector:
         """Verify that weights are updated and loss decreases during training."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=16, target_dim=16,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=16,
+            target_dim=16,
+            source_heads=1,
+            target_heads=1,
         )
         projector = CrossModelKVProjector(config)
 
@@ -288,9 +303,12 @@ class TestProjector:
         """Verify training history dictionary structure."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=16, target_dim=16,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=16,
+            target_dim=16,
+            source_heads=1,
+            target_heads=1,
         )
         projector = CrossModelKVProjector(config)
         source_kv = [{"layer_0_keys": torch.randn(2, 16)}]
@@ -304,9 +322,12 @@ class TestProjector:
         """Verify that save and load restore identical projector weights."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=32, target_dim=64,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=32,
+            target_dim=64,
+            source_heads=1,
+            target_heads=1,
         )
         projector = CrossModelKVProjector(config)
         path = tmp_path / "proj.safetensors"
@@ -316,18 +337,21 @@ class TestProjector:
         assert loaded.config.source_dim == 32
         assert loaded.config.target_dim == 64
 
-        orig_weight = projector.model.net[0].weight # type: ignore[cast]
-        loaded_weight = loaded.model.net[0].weight # type: ignore[cast]
+        orig_weight = projector.model.net[0].weight  # type: ignore[cast]
+        loaded_weight = loaded.model.net[0].weight  # type: ignore[cast]
         assert torch.allclose(orig_weight, loaded_weight)
 
     def test_quality_identical_perfect(self) -> None:
         """If source matches target, quality should be near perfect."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="s",
-            source_dim=16, target_dim=16,
-            source_heads=1, target_heads=1,
-            num_layers=1
+            source_model="s",
+            target_model="s",
+            source_dim=16,
+            target_dim=16,
+            source_heads=1,
+            target_heads=1,
+            num_layers=1,
         )
         # Manually set to identity for perfect score
         projector = CrossModelKVProjector(config)
@@ -347,9 +371,12 @@ class TestProjector:
         """Random unrelated tensors should result in low passing rate."""
         torch.manual_seed(42)
         config = ProjectorConfig(
-            source_model="s", target_model="t",
-            source_dim=16, target_dim=16,
-            source_heads=1, target_heads=1
+            source_model="s",
+            target_model="t",
+            source_dim=16,
+            target_dim=16,
+            source_heads=1,
+            target_heads=1,
         )
         projector = CrossModelKVProjector(config)
         src = [{"layer_0_keys": torch.randn(1, 16)}]
@@ -384,12 +411,22 @@ class TestTurboquantBridge:
 
     def test_pipeline_save_context(self, tmp_path: Path) -> None:
         """Verify TQKPipeline can save context using a mock model."""
+
         class MockModel:
             config = type("obj", (object,), {"hidden_size": 16})
-            def to(self, *args, **kwargs): return self
-            def eval(self): return self
+
+            def to(self, *args, **kwargs):
+                return self
+
+            def eval(self):
+                return self
+
             def __call__(self, *args, **kwargs):
-                return type("obj", (object,), {"past_key_values": ((torch.randn(1, 1, 1, 16), torch.randn(1, 1, 1, 16)),)})()
+                return type(
+                    "obj",
+                    (object,),
+                    {"past_key_values": ((torch.randn(1, 1, 1, 16), torch.randn(1, 1, 1, 16)),)},
+                )()
 
         class MockTokenizer:
             def __call__(self, *args, **kwargs):
@@ -403,8 +440,10 @@ class TestTurboquantBridge:
 
     def test_patch_model_unsupported_warns(self) -> None:
         """Verify warning when patching a non-HF model."""
+
         class NotAModel:
             pass
+
         with pytest.warns(UserWarning, match="not appear to be a standard HuggingFace"):
             tqk = TQKFile({}, TQKMetadata(source_model="m"))
             res = patch_model_with_tqk(NotAModel(), tqk)

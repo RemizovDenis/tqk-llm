@@ -51,9 +51,7 @@ class KVExtractor:
                 stacklevel=2,
             )
 
-        inputs = self.tokenizer(
-            text, return_tensors="pt", truncation=True, max_length=max_length
-        )
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         with torch.no_grad():
@@ -105,17 +103,9 @@ class KVExtractor:
 
         # Handle various config attribute names used in HF
         num_layers = getattr(config, "num_hidden_layers", 0)
-        num_heads = getattr(
-            config, "num_attention_heads", getattr(config, "n_head", 0)
-        )
-        hidden_size = getattr(
-            config, "hidden_size", getattr(config, "n_embd", 0)
-        )
-        head_dim = (
-            getattr(config, "head_dim", hidden_size // num_heads)
-            if num_heads > 0
-            else 0
-        )
+        num_heads = getattr(config, "num_attention_heads", getattr(config, "n_head", 0))
+        hidden_size = getattr(config, "hidden_size", getattr(config, "n_embd", 0))
+        head_dim = getattr(config, "head_dim", hidden_size // num_heads) if num_heads > 0 else 0
 
         return {
             "model_type": getattr(config, "model_type", "unknown"),

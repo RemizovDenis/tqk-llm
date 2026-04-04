@@ -175,9 +175,7 @@ class TQKFile:
             if expected_sha256:
                 actual_sha256 = hashlib.sha256(payload).hexdigest()
                 if actual_sha256 != expected_sha256:
-                    raise ValueError(
-                        "Integrity check failed: payload SHA-256 mismatch"
-                    )
+                    raise ValueError("Integrity check failed: payload SHA-256 mismatch")
 
         tensors = safetensors.torch.load(payload)
         return cls(tensors, metadata)

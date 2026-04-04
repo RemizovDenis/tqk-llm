@@ -125,7 +125,4 @@ class TQKValidator:
             Formatted string describing the status.
         """
         status = "PASSED" if result.passed else "FAILED"
-        return (
-            f"{status} cosine_sim={result.cosine_similarity:.4f} "
-            f"mse={result.mse:.6f}"
-        )
+        return f"{status} cosine_sim={result.cosine_similarity:.4f} mse={result.mse:.6f}"
